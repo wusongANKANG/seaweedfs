@@ -30,6 +30,7 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/topology"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"github.com/seaweedfs/seaweedfs/weed/wdclient"
+	util_http "github.com/seaweedfs/seaweedfs/weed/util/http"
 )
 
 const (
@@ -92,15 +93,15 @@ func NewMasterServer(r *mux.Router, option *MasterOption, peers map[string]pb.Se
 	v.SetDefault("master.replication.treat_replication_as_minimums", false)
 	replicationAsMin := v.GetBool("master.replication.treat_replication_as_minimums")
 
-	v.SetDefault("master.volume_growth.copy_1", 7)
-	v.SetDefault("master.volume_growth.copy_2", 6)
-	v.SetDefault("master.volume_growth.copy_3", 3)
-	v.SetDefault("master.volume_growth.copy_other", 1)
-	v.SetDefault("master.volume_growth.threshold", 0.9)
-	topology.VolumeGrowStrategy.Copy1Count = v.GetInt("master.volume_growth.copy_1")
-	topology.VolumeGrowStrategy.Copy2Count = v.GetInt("master.volume_growth.copy_2")
-	topology.VolumeGrowStrategy.Copy3Count = v.GetInt("master.volume_growth.copy_3")
-	topology.VolumeGrowStrategy.CopyOtherCount = v.GetInt("master.volume_growth.copy_other")
+	v.SetDefault("master.volume_growth.copy_1", topology.VolumeGrowStrategy.Copy1Count)
+	v.SetDefault("master.volume_growth.copy_2", topology.VolumeGrowStrategy.Copy2Count)
+	v.SetDefault("master.volume_growth.copy_3", topology.VolumeGrowStrategy.Copy3Count)
+	v.SetDefault("master.volume_growth.copy_other", topology.VolumeGrowStrategy.CopyOtherCount)
+	v.SetDefault("master.volume_growth.threshold", topology.VolumeGrowStrategy.Threshold)
+	topology.VolumeGrowStrategy.Copy1Count = v.GetUint32("master.volume_growth.copy_1")
+	topology.VolumeGrowStrategy.Copy2Count = v.GetUint32("master.volume_growth.copy_2")
+	topology.VolumeGrowStrategy.Copy3Count = v.GetUint32("master.volume_growth.copy_3")
+	topology.VolumeGrowStrategy.CopyOtherCount = v.GetUint32("master.volume_growth.copy_other")
 	topology.VolumeGrowStrategy.Threshold = v.GetFloat64("master.volume_growth.threshold")
 
 	var preallocateSize int64
@@ -256,7 +257,7 @@ func (ms *MasterServer) proxyToLeader(f http.HandlerFunc) http.HandlerFunc {
 			}
 			director(req)
 		}
-		proxy.Transport = util.Transport
+		proxy.Transport = util_http.GetGlobalHttpClient().GetClientTransport()
 		proxy.ServeHTTP(w, r)
 	}
 }
